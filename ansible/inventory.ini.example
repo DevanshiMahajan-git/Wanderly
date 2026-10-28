@@ -1,0 +1,3 @@
+[wanderly]
+# Replace with a Linux host you control before running the playbook.
+# 192.0.2.10 ansible_user=ubuntu

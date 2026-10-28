@@ -1,0 +1,1 @@
+package com.wanderly.repository; import com.wanderly.model.*; import org.springframework.data.jpa.repository.JpaRepository; import java.util.List; public interface TripRepository extends JpaRepository<Trip,Long> { List<Trip> findByTitleContainingIgnoreCaseOrDestinationContainingIgnoreCase(String title,String destination); long countByStatus(TripStatus status); }

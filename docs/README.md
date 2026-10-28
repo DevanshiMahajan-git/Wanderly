@@ -1,0 +1,1 @@
+Create `Task-01.md` through `Task-15.md`. Each report should include objective, actual steps/commands, genuine evidence screenshots, result, issues/fixes, and reflection. Store screenshots in `docs/screenshots/`. Never claim a task passed until you have run it and captured evidence.

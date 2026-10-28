@@ -1,0 +1,22 @@
+---
+- name: Prepare Linux host for Wanderly
+  hosts: wanderly
+  become: true
+  tasks:
+    - name: Ensure deployment directory exists
+      ansible.builtin.file:
+        path: /opt/wanderly
+        state: directory
+        mode: '0755'
+    - name: Ensure Docker service is running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+    - name: Check Docker version
+      ansible.builtin.command: docker --version
+      register: docker_version
+      changed_when: false
+    - name: Show Docker version
+      ansible.builtin.debug:
+        var: docker_version.stdout

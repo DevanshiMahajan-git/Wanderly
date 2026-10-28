@@ -1,0 +1,1 @@
+document.addEventListener('DOMContentLoaded',()=>{const s=document.getElementById('startDate'),e=document.getElementById('endDate');if(s&&e){s.addEventListener('change',()=>{e.min=s.value;if(e.value&&e.value<s.value)e.value=s.value;});}});

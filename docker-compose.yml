@@ -1,0 +1,11 @@
+services:
+  wanderly:
+    build: .
+    image: wanderly:0.1.0
+    ports:
+      - "8080:8080"
+    volumes:
+      - wanderly-data:/app/data
+    restart: unless-stopped
+volumes:
+  wanderly-data:
