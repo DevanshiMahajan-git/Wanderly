@@ -1,1 +1,232 @@
-<!doctype html><html lang="en" xmlns:th="http://www.thymeleaf.org"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Wanderly · Your journey, beautifully planned</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" th:href="@{/css/style.css}"></head><body><aside class="sidebar"><a class="brand" href="/"> <span class="brand-mark">w.</span> wanderly</a><small>WORKSPACE</small><a class="nav active" href="/">▦ &nbsp; Overview</a><a class="nav" href="#trips">⌁ &nbsp; My itineraries</a><div class="side-bottom"><b>Dream it. Plan it.</b><p>Your next favourite memory is one plan away.</p><a href="/trips/new">＋ Start a trip</a><hr>DM &nbsp; Devanshi<br><small>Travel planner</small></div></aside><main><header>Workspace <span>/</span> Overview <div class="user">DM</div></header><section class="welcome"><div><small class="eyebrow">✦ &nbsp; YOUR TRAVEL SPACE</small><h1>Every journey starts<br>with a <em>little wonder.</em></h1><p>Collect the places you dream of. We'll help you bring them to life.</p></div><a class="button" href="/trips/new">＋ &nbsp; Plan a new trip</a></section><section class="stats"><div><small>Total itineraries</small><strong th:text="${totalTrips}">2</strong><small>All your plans, in one place</small></div><div><small>Planned</small><strong th:text="${plannedTrips}">1</strong><small>Adventures on the horizon</small></div><div><small>In progress</small><strong th:text="${activeTrips}">1</strong><small>Making memories right now</small></div><div><small>Completed</small><strong th:text="${completedTrips}">0</strong><small>Stories worth keeping</small></div></section><p class="flash" th:if="${success}" th:text="${success}"></p><p class="flash error" th:if="${error}" th:text="${error}"></p><section class="section-title" id="trips"><div><small class="eyebrow">YOUR COLLECTION</small><h2>Trips to look forward to</h2><p>A little inspiration for wherever life takes you.</p></div><form action="/" method="get" class="search"><input name="q" placeholder="Search destinations..." th:value="${query}"><button>Search</button></form></section><section class="trip-grid"><article class="trip" th:each="trip:${trips}"><div class="photo" th:style="${trip.imageUrl != null && !trip.imageUrl.isBlank()} ? |background-image:linear-gradient(180deg,transparent,rgba(15,35,27,.15)),url('${trip.imageUrl}')| : 'background:linear-gradient(135deg,#b5c9b6,#e8d9bd)'"><span th:text="${#strings.replace(trip.status.name(),'_',' ')}" th:class="${'pill '+#strings.toLowerCase(trip.status.name())}">PLANNED</span></div><div class="trip-content"><small>⌖ &nbsp;<span th:text="${trip.destination}">Udaipur, India</span></small><h3 th:text="${trip.title}">A little escape</h3><p th:text="${trip.notes}">Lakeside mornings and sunsets.</p><div class="meta"><span th:text="${#temporals.format(trip.startDate,'dd MMM')}+' – '+${#temporals.format(trip.endDate,'dd MMM yyyy')}">12–16 Nov</span><span th:text="${trip.travellers}+' travellers'">2 travellers</span></div><div class="actions"><a th:href="@{/trips/{id}/edit(id=${trip.id})}">Edit details ↗</a><form th:action="@{/trips/{id}/delete(id=${trip.id})}" method="post" onsubmit="return confirm('Remove this trip?')"><button>×</button></form></div><form class="status" th:action="@{/trips/{id}/status(id=${trip.id})}" method="post"><select name="status"><option th:each="s:${statuses}" th:value="${s}" th:text="${#strings.replace(s.name(),'_',' ')}" th:selected="${s==trip.status}"></option></select><select name="role"><option>Planner</option><option>Reviewer</option></select><button>Update</button></form></div></article><a class="add-card" href="/trips/new"><span>＋</span><h3>Your next adventure?</h3><p>Start with a destination and see where it leads.</p><b>Create an itinerary ↗</b></a></section><section class="workflow"><div><small class="eyebrow">BUILT-IN WORKFLOW</small><h2>From someday to unforgettable.</h2><p>Move each plan from planned to in progress and completed.</p></div><div class="steps">Planned <span>⟶</span> In progress <span>⟶</span> Completed</div></section><footer>Made for the journeys that make us. <span>WANDERLY · DEVOPS PROJECT</span></footer></main><script th:src="@{/js/app.js}"></script></body></html>
+```html
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Wanderly · Your journey, beautifully planned</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+          rel="stylesheet">
+
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+
+<aside class="sidebar">
+    <a class="brand" href="/">
+        <span class="brand-mark">w.</span> wanderly
+    </a>
+
+    <small>WORKSPACE</small>
+
+    <a class="nav active" href="/">▦ &nbsp; Overview</a>
+    <a class="nav" href="#trips">⌁ &nbsp; My itineraries</a>
+
+    <div class="side-bottom">
+        <b>Dream it. Plan it.</b>
+        <p>Your next favourite memory is one plan away.</p>
+
+        <a href="/trips/new">＋ Start a trip</a>
+
+        <hr>
+
+        DM &nbsp; Devanshi<br>
+        <small>Travel planner</small>
+    </div>
+</aside>
+
+<main>
+
+    <header>
+        Workspace <span>/</span> Overview
+        <div class="user">DM</div>
+    </header>
+
+    <section class="welcome">
+        <div>
+            <small class="eyebrow">✦ &nbsp; YOUR TRAVEL SPACE</small>
+
+            <h1>
+                Every journey starts<br>
+                with a <em>little wonder.</em>
+            </h1>
+
+            <p>Collect the places you dream of. We'll help you bring them to life.</p>
+        </div>
+
+        <a class="button" href="/trips/new">＋ &nbsp; Plan a new trip</a>
+    </section>
+
+    <section class="stats">
+
+        <div>
+            <small>Total itineraries</small>
+            <strong th:text="${totalTrips}">2</strong>
+            <small>All your plans, in one place</small>
+        </div>
+
+        <div>
+            <small>Planned</small>
+            <strong th:text="${plannedTrips}">1</strong>
+            <small>Adventures on the horizon</small>
+        </div>
+
+        <div>
+            <small>In progress</small>
+            <strong th:text="${activeTrips}">1</strong>
+            <small>Making memories right now</small>
+        </div>
+
+        <div>
+            <small>Completed</small>
+            <strong th:text="${completedTrips}">0</strong>
+            <small>Stories worth keeping</small>
+        </div>
+
+    </section>
+
+    <p class="flash" th:if="${success}" th:text="${success}"></p>
+    <p class="flash error" th:if="${error}" th:text="${error}"></p>
+
+    <section class="section-title" id="trips">
+
+        <div>
+            <small class="eyebrow">YOUR COLLECTION</small>
+            <h2>Trips to look forward to</h2>
+            <p>A little inspiration for wherever life takes you.</p>
+        </div>
+
+        <!-- Search and status filter -->
+        <form action="/" method="get" class="search">
+
+            <input
+                    type="search"
+                    name="q"
+                    placeholder="Search destinations..."
+                    th:value="${query}">
+
+            <select name="status" aria-label="Filter trips by status">
+                <option value="" th:selected="${selectedStatus == null}">
+                    All statuses
+                </option>
+
+                <option
+                        th:each="s : ${statuses}"
+                        th:value="${s.name()}"
+                        th:text="${#strings.replace(s.name(), '_', ' ')}"
+                        th:selected="${s == selectedStatus}">
+                </option>
+            </select>
+
+            <button type="submit">Filter</button>
+
+            <a href="/" class="button">Reset</a>
+
+        </form>
+
+    </section>
+
+    <section class="trip-grid">
+
+        <article class="trip" th:each="trip : ${trips}">
+
+            <div class="photo"
+                 th:style="${trip.imageUrl != null && !trip.imageUrl.isBlank()}
+                 ? |background-image:linear-gradient(180deg,transparent,rgba(15,35,27,.15)),url('${trip.imageUrl}')|
+                 : 'background:linear-gradient(135deg,#b5c9b6,#e8d9bd)'">
+
+                <span
+                        th:text="${#strings.replace(trip.status.name(), '_', ' ')}"
+                        th:class="${'pill ' + #strings.toLowerCase(trip.status.name())}">
+                    PLANNED
+                </span>
+
+            </div>
+
+            <div class="trip-content">
+
+                <small>
+                    ⌖ &nbsp;
+                    <span th:text="${trip.destination}">Udaipur, India</span>
+                </small>
+
+                <h3 th:text="${trip.title}">A little escape</h3>
+
+                <p th:text="${trip.notes}">Lakeside mornings and sunsets.</p>
+
+                <div class="meta">
+                    <span th:text="${#temporals.format(trip.startDate, 'dd MMM')} + ' – ' + ${#temporals.format(trip.endDate, 'dd MMM yyyy')}">
+                        12–16 Nov
+                    </span>
+
+                    <span th:text="${trip.travellers} + ' travellers'">
+                        2 travellers
+                    </span>
+                </div>
+
+                <div class="actions">
+
+                    <a th:href="@{/trips/{id}/edit(id=${trip.id})}">
+                        Edit details ↗
+                    </a>
+
+                    <form
+                            th:action="@{/trips/{id}/delete(id=${trip.id})}"
+                            method="post"
+                            onsubmit="return confirm('Remove this trip?')">
+
+                        <button type="submit">×</button>
+
+                    </form>
+
+                </div>
+
+                <form
+                        class="status"
+                        th:action="@{/trips/{id}/status(id=${trip.id})}"
+                        method="post">
+
+                    <select name="status">
+                        <option
+                                th:each="s : ${statuses}"
+                                th:value="${s}"
+                                th:text="${#strings.replace(s.name(), '_', ' ')}"
+                                th:selected="${s == trip.status}">
+                        </option>
+                    </select>
+
+                    <select name="role">
+                        <option>Planner</option>
+                        <option>Reviewer</option>
+                    </select>
+
+                    <button type="submit">Update</button>
+
+                </form>
+
+            </div>
+
+        </article>
+
+        <a class="add-card" href="/trips/new">
+            <span>＋</span>
+            <h3>Your next adventure?</h3>
+            <p>Start with a destination and see where it leads.</p>
+            <b>Create an itinerary ↗</b>
+        </a>
+
+        <p th:if="${#lists.isEmpty(trips)}">
+            No trips match your search or selected status. Try changing the filters.
+        </p>
+
+    </section>
+
+    <section class="workflow">
+
+        <div>
+            <small class="eyebrow">BUILT-IN WORKFLOW</small>
