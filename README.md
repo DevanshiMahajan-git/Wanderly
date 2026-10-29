@@ -15,3 +15,6 @@ Install Java 17 and Maven, then run `mvn spring-boot:run`; open http://localhost
 `docker build -t wanderly:0.1.0 .` then `docker run --rm -p 8080:8080 wanderly:0.1.0`.
 
 The role selector is an educational workflow demonstration, not production authentication.
+
+## Branch Workflow
+Changes are reviewed through pull requests before merging into main.
