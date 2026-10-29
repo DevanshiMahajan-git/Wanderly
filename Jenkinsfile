@@ -2,20 +2,21 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'APP_PORT', defaultValue: '8081',
-               description: 'Port for the Wanderly application')
+        string(
+            name: 'APP_PORT',
+            defaultValue: '8081',
+            description: 'Port on which Wanderly will run'
+        )
     }
 
     environment {
         MAVEN_CMD = 'C:\\Users\\Prakash\\Downloads\\apache-maven-3.10.0-bin\\apache-maven-3.10.0\\bin\\mvn.cmd'
-        APP_DIR = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Wanderly-CI'
-        APP_JAR = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Wanderly-CI\\target\\wanderly.jar'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                echo 'Checking out Wanderly source code.'
+                echo 'Source code is managed through GitHub SCM.'
             }
         }
 
@@ -28,63 +29,143 @@ pipeline {
         stage('Package Application') {
             steps {
                 bat '"%MAVEN_CMD%" -B package -DskipTests'
-                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+
+                archiveArtifacts(
+                    artifacts: 'target/*.jar',
+                    fingerprint: true
+                )
             }
         }
 
         stage('Deploy Application') {
             steps {
                 powershell '''
+                    $ErrorActionPreference = "Stop"
+
                     $port = [int]$env:APP_PORT
+                    $workspace = $env:WORKSPACE
+                    $jar = Join-Path $workspace "target\\wanderly.jar"
+                    $log = Join-Path $workspace "wanderly-app.log"
+                    $errorLog = Join-Path $workspace "wanderly-app-error.log"
+                    $pidFile = Join-Path $workspace "wanderly-deployment.pid"
 
                     if ($port -lt 1024 -or $port -gt 65535) {
                         throw "APP_PORT must be between 1024 and 65535."
                     }
 
-                    $jar = Join-Path $env:WORKSPACE "target\\wanderly.jar"
-
                     if (-not (Test-Path $jar)) {
                         throw "Application JAR not found: $jar"
                     }
 
-                    $existing = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+                    $listener = Get-NetTCPConnection `
+                        -LocalPort $port `
+                        -State Listen `
+                        -ErrorAction SilentlyContinue
 
-                    if ($existing) {
-                        throw "Port $port is already in use. Stopping deployment to avoid terminating an unrelated process."
+                    if ($listener) {
+                        throw "Port $port is already occupied. No process was terminated."
                     }
 
-                    $process = Start-Process -FilePath "java" `
-                        -ArgumentList @("-jar", "`"$jar`"", "--server.port=$port") `
-                        -WorkingDirectory $env:WORKSPACE `
+                    $javaCommand = Get-Command java.exe -ErrorAction Stop
+                    $javaPath = $javaCommand.Source
+
+                    Remove-Item $log, $errorLog -Force -ErrorAction SilentlyContinue
+
+                    $appProcess = Start-Process `
+                        -FilePath $javaPath `
+                        -ArgumentList @(
+                            "-jar",
+                            "`"$jar`"",
+                            "--server.port=$port"
+                        ) `
+                        -WorkingDirectory $workspace `
+                        -RedirectStandardOutput $log `
+                        -RedirectStandardError $errorLog `
                         -PassThru
+
+                    Set-Content -Path $pidFile -Value $appProcess.Id
+
+                    Write-Host "Started Wanderly with PID $($appProcess.Id)."
+                    Write-Host "Application log: $log"
 
                     $healthy = $false
 
                     for ($i = 0; $i -lt 30; $i++) {
                         Start-Sleep -Seconds 2
 
-                        if ($process.HasExited) {
-                            throw "Wanderly exited during startup. Check the Jenkins workspace and application logs."
+                        $appProcess.Refresh()
+
+                        if ($appProcess.HasExited) {
+                            Write-Host "Application exited during startup."
+                            Get-Content $log -ErrorAction SilentlyContinue
+                            Get-Content $errorLog -ErrorAction SilentlyContinue
+                            throw "Wanderly stopped during startup."
                         }
 
                         try {
-                            $response = Invoke-WebRequest -Uri "http://localhost:$port/" -UseBasicParsing -TimeoutSec 3
+                            $response = Invoke-WebRequest `
+                                -Uri "http://localhost:$port/" `
+                                -UseBasicParsing `
+                                -TimeoutSec 3
+
                             if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 500) {
                                 $healthy = $true
                                 break
                             }
-                        } catch {
-                            # The application may still be starting.
+                        }
+                        catch {
+                            # Continue waiting while Spring Boot starts.
                         }
                     }
 
                     if (-not $healthy) {
-                        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-                        throw "Wanderly did not respond on port $port within 60 seconds."
+                        Get-Content $log -ErrorAction SilentlyContinue
+                        Get-Content $errorLog -ErrorAction SilentlyContinue
+                        throw "Wanderly did not respond within 60 seconds."
                     }
 
-                    Set-Content -Path (Join-Path $env:WORKSPACE "wanderly-deployment.pid") -Value $process.Id
-                    Write-Host "Wanderly is running on port $port. PID: $($process.Id)"
+                    Start-Sleep -Seconds 5
+                    $appProcess.Refresh()
+
+                    if ($appProcess.HasExited) {
+                        Get-Content $log -ErrorAction SilentlyContinue
+                        Get-Content $errorLog -ErrorAction SilentlyContinue
+                        throw "Wanderly responded initially but exited shortly afterward."
+                    }
+
+                    $listener = Get-NetTCPConnection `
+                        -LocalPort $port `
+                        -State Listen `
+                        -ErrorAction SilentlyContinue
+
+                    if (-not $listener) {
+                        throw "Wanderly process exists, but port $port is no longer listening."
+                    }
+
+                    Write-Host "Deployment health check passed."
+                    Write-Host "Wanderly is responding on port $port."
+                    Write-Host "Process ID: $($appProcess.Id)"
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                powershell '''
+                    $port = [int]$env:APP_PORT
+
+                    try {
+                        $response = Invoke-WebRequest `
+                            -Uri "http://localhost:$port/" `
+                            -UseBasicParsing `
+                            -TimeoutSec 10
+
+                        Write-Host "HTTP status: $($response.StatusCode)"
+                        Write-Host "Wanderly is accessible on port $port."
+                    }
+                    catch {
+                        throw "Deployment verification failed: $($_.Exception.Message)"
+                    }
                 '''
             }
         }
@@ -92,16 +173,18 @@ pipeline {
 
     post {
         success {
-            echo 'Wanderly build, tests, packaging, and deployment completed successfully.'
+            echo 'Wanderly build, tests, packaging, deployment, and verification succeeded.'
         }
 
         failure {
-            echo 'Pipeline failed. Review the stage logs.'
+            echo 'Pipeline failed. Check the stage logs and wanderly-app.log.'
         }
 
         always {
-            junit allowEmptyResults: true,
-                  testResults: '**/target/surefire-reports/TEST-*.xml'
+            junit(
+                allowEmptyResults: true,
+                testResults: '**/target/surefire-reports/TEST-*.xml'
+            )
         }
     }
 }
