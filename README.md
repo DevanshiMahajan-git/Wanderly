@@ -17,4 +17,6 @@ Install Java 17 and Maven, then run `mvn spring-boot:run`; open http://localhost
 The role selector is an educational workflow demonstration, not production authentication.
 
 ## Branch Workflow
-Changes are reviewed through pull requests before merging into main.
+
+- Feature branch: `project-documentation`
+- Changes are reviewed through pull requests before merging into main.
