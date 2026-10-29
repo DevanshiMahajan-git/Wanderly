@@ -40,7 +40,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 bat '''
-                    set "DOCKER_CONFIG=C:\\Users\\Prakash\\.docker"
+                    set "DOCKER_CONFIG=C:\\Users\\Prakash\\.docker-jenkins"
                     "C:\\Users\\Prakash\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\docker.exe" --context desktop-linux build -t wanderly:latest .
                 '''
             }
