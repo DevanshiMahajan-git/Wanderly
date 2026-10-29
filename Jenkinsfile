@@ -37,6 +37,15 @@ pipeline {
             }
         }
 
+        stage('Build Docker Image') {
+            steps {
+                bat '''
+                    set "DOCKER_CONFIG=C:\\Users\\Prakash\\.docker"
+                    "C:\\Users\\Prakash\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\docker.exe" --context desktop-linux build -t wanderly:latest .
+                '''
+            }
+        }
+
         stage('Deploy Application') {
             steps {
                 powershell '''
